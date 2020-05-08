@@ -1,0 +1,168 @@
+public static void Main()
+{
+
+
+    string[] args = new string[]
+      {
+        "-dbfile:" + GetLastUsedKeypassFile()
+        ,"-args:" + System.Environment.GetEnvironmentVariable("args")
+        ,"-keyfile:"
+        ,"-pw:" + System.Environment.GetEnvironmentVariable("password")
+      };
+
+    System.Environment.SetEnvironmentVariable("password", "");
+
+    // "C:\\Users\\USER\\.config\\weboob\\backends";
+    string filePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\.config\\weboob\\backends";
+
+    KeePass.Util.CommandLineArgs cmdArgs = new KeePass.Util.CommandLineArgs(args);    
+
+    CompositeKey inputKey = new CompositeKey();
+    inputKey.AddUserKey(new KcpPassword(cmdArgs["pw"]));    
+    //inputKey.AddUserKey(new KcpKeyFile(cmdArgs["keyfile"]));
+
+    IOConnectionInfo iocInput = new IOConnectionInfo();
+    iocInput.Path = cmdArgs["dbfile"];
+    PwDatabase pwInputDB = new PwDatabase();
+    Console.Write("Opening {0}... ", iocInput.Path);
+    pwInputDB.Open( iocInput, inputKey, null);
+    Console.WriteLine();
+
+    System.Text.RegularExpressions.Regex searchText = new System.Text.RegularExpressions.Regex(
+        @"`keypassget(\.bat)?\s+(\S+|""[^""]*"")\s+(\S+|""[^""]*"")\s+(\S+|""[^""]*"")`"
+    );
+    // expression positions:
+    int GROUP = 3;
+    int TYPE = 2;
+    int TITLE = 4;
+
+    Console.Write("Reading {0}...", filePath);
+    using (var f = File.OpenRead(filePath))
+    {
+        var s = new StreamReader(f);
+
+        while (!s.EndOfStream) {
+            var line = s.ReadLine();
+
+            if (line != null && searchText.IsMatch(line)) {
+                System.Text.RegularExpressions.Match m = searchText.Match(line);
+                string group = m.Groups[GROUP].Value.Trim('"');
+                string type = m.Groups[TYPE].Value.Trim('"');
+                string title = m.Groups[TITLE].Value.Trim('"');
+                string value = retrieveValue(pwInputDB, type, group, title);
+                //Console.WriteLine("type={0}, group={1}, title={2}, value={3}", type, group, title, value);
+
+                string var = "VAL_" + type + "_" + group + "_" + title;
+                var = var.Replace(" ", "--WS--");
+                value = Encrypt(value);
+                //Console.WriteLine("{0} = {1}", var, value);
+                System.Environment.SetEnvironmentVariable(var, value);
+
+                Console.Write(".");
+                Console.Out.Flush();
+            }  
+        }
+
+        pwInputDB.Close();
+        f.Close();
+        Console.WriteLine();
+    }
+
+    Console.WriteLine();
+    
+    RunBoomoney(cmdArgs["args"]);
+
+    //MessageService.ShowInfo("INFILE and OUTFILE parameters cannot be the same...");
+}
+
+
+private static string retrieveValue(PwDatabase db, string type, string group, string title)
+{
+
+    PwGroup gr = db.RootGroup.FindCreateGroup(group, false);
+
+    SearchParameters sp = new SearchParameters();
+    sp.SearchString = title;
+    sp.SearchInTitles = true;
+    
+    PwObjectList<PwEntry> lResults = new PwObjectList<PwEntry>();
+
+    gr.SearchEntries(sp, lResults);
+
+    return lResults.GetAt(0).Strings.Get(type).ReadString();
+}
+
+private static void RunBoomoney(string args)
+{
+    Console.WriteLine("Starting boomoney...");
+    var process = new System.Diagnostics.Process {
+        StartInfo = new System.Diagnostics.ProcessStartInfo {
+            FileName = @"python",
+            Arguments = @"D:\Dropbox\Projets\boomoney\scripts\boomoney-script.py " + args,
+            //Arguments = "--help",
+            //CreateNoWindow = true,
+            //RedirectStandardOutput = true,
+            //RedirectStandardError = true,
+            //RedirectStandardInput = true,
+            UseShellExecute = false
+        }
+    };
+    process.Start();
+    process.WaitForExit();    
+}
+
+private static string Encrypt(string str)
+{
+    var enc = "F45A9B6C"; // magic
+
+    var len = str.Length;
+
+    var len_hex = string.Format("{0:X8}", len);
+    enc += len_hex;
+
+    foreach (char c in str)
+    {
+        var c_int = Convert.ToInt32(c);
+        var c_hex = string.Format("{0:X2}", c_int);
+        enc += c_hex;
+    }    
+    return enc;
+}
+
+private static string GetKeepassPath()
+{
+    // Start the child process.
+    System.Diagnostics.Process p = new System.Diagnostics.Process();
+    // Redirect the output stream of the child process.
+    p.StartInfo.UseShellExecute = false;
+    p.StartInfo.RedirectStandardOutput = true;
+    p.StartInfo.FileName = "where";
+    p.StartInfo.Arguments = "keepass";
+    p.Start();
+    // Do not wait for the child process to exit before
+    // reading to the end of its redirected stream.
+    // p.WaitForExit();
+    // Read the output stream first and then wait.
+    string output = p.StandardOutput.ReadLine();
+    p.WaitForExit();
+    if (output == null) {
+        Console.WriteLine("Cannot find Keypass. Makes sure it is installed and in PATH.");
+        output="";
+    }
+    output = System.Text.RegularExpressions.Regex.Replace(output, @"\\KeePass.exe$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    return output;
+}
+
+private static string GetLastUsedKeypassFile()
+{
+    string configFile = GetKeepassPath() + "/KeePass.config.xml";
+
+    System.Xml.XmlDocument doc = new System.Xml.XmlDocument();
+    doc.Load(configFile);
+
+    string lastUsedFile = doc.SelectNodes("//Application/LastUsedFile/Path")[0].InnerText.ToString(); 
+    if (lastUsedFile.StartsWith(".")) {
+        lastUsedFile = GetKeepassPath() + "/" + lastUsedFile;
+    }
+    return System.IO.Path.GetFullPath(lastUsedFile);
+}

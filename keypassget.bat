@@ -15,6 +15,11 @@ if defined %var% (
     exit /B
 )
 
+echo.keypassget.bat should not be used directly. >&2
+echo.Use bmn.bat as entry point >&2
+
+exit /B
+
 :strLen string len -- returns the length of a string
 ::                 -- string [in]  - variable name containing the string being measured for length
 ::                 -- len    [out] - variable to be used to return the string length

@@ -29,7 +29,7 @@ public static void Main()
     Console.WriteLine();
 
     System.Text.RegularExpressions.Regex searchText = new System.Text.RegularExpressions.Regex(
-        @"`keypassget(\.bat)?\s+(\S+|""[^""]*"")\s+(\S+|""[^""]*"")\s+(\S+|""[^""]*"")`"
+        @"`passget(\.bat)?\s+(\S+|""[^""]*"")\s+(\S+|""[^""]*"")\s+(\S+|""[^""]*"")`"
     );
     // expression positions:
     int GROUP = 3;

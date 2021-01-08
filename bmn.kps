@@ -7,7 +7,7 @@ public static void Main()
         "-dbfile:" + GetLastUsedKeypassFile()
         ,"-args:" + System.Environment.GetEnvironmentVariable("args")
         ,"-keyfile:"
-        ,"-pw:" + System.Environment.GetEnvironmentVariable("password")
+        ,"-pw:" + decryptIfNeeded(System.Environment.GetEnvironmentVariable("password"))
       };
 
     System.Environment.SetEnvironmentVariable("password", "");
@@ -99,7 +99,9 @@ private static void RunBoomoney(string args)
         StartInfo = new System.Diagnostics.ProcessStartInfo {
             FileName = @"python",
             Arguments = @"D:\Dropbox\Projets\boomoney\scripts\boomoney-script.py " + args,
-            //Arguments = "--help",
+//            FileName = @"D:\Dropbox\Projets\boomoney\scripts\boomoney",
+//            Arguments = args,
+           //Arguments = "--help",
             //CreateNoWindow = true,
             //RedirectStandardOutput = true,
             //RedirectStandardError = true,
@@ -111,9 +113,11 @@ private static void RunBoomoney(string args)
     process.WaitForExit();    
 }
 
+private static string magic = "F45A9B6C";
+
 private static string Encrypt(string str)
 {
-    var enc = "F45A9B6C"; // magic
+    var enc = magic; // magic
 
     var len = str.Length;
 
@@ -127,6 +131,22 @@ private static string Encrypt(string str)
         enc += c_hex;
     }    
     return enc;
+}
+
+private static string decryptIfNeeded(string str)
+{
+    if (!str.StartsWith(magic)) return str;
+
+    string len_hex = str.Substring(magic.Length, 8);
+    int len = Convert.ToInt32(len_hex, 16);
+
+    string dec = "";
+    var start = magic.Length + 8;
+    for (int i = 0; i < len * 2; i+=2) {
+        dec += (char)Convert.ToInt32(str.Substring(start + i, 2), 16);
+    }
+
+    return dec;
 }
 
 private static string GetKeepassPath()

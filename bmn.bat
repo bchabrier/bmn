@@ -1,7 +1,7 @@
 @echo off
 
 rem if password define then make sure it is encrypted
-if defined password call passget
+if defined password call passget --set
 
 setlocal enabledelayedexpansion
 

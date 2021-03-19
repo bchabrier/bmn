@@ -10,7 +10,7 @@ set PYTHONPATH=D:\Dropbox\Projets\boomoney
 
 rem check version of Python
 set py=2
-for /f "delims=" %%a in ('python --version 2^>nul ^| findstr "3"') do echo set "py=3"
+for /f "delims=" %%a in ('python --version 2^>nul ^| findstr "3"') do set "py=3"
 
 rem make sure we are using Python3
 if %py%==2 (

@@ -13,7 +13,7 @@ public static void Main()
     System.Environment.SetEnvironmentVariable("password", "");
 
     // "C:\\Users\\USER\\.config\\weboob\\backends";
-    string filePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\.config\\weboob\\backends";
+    string filePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\.config\\woob\\backends";
 
     KeePass.Util.CommandLineArgs cmdArgs = new KeePass.Util.CommandLineArgs(args);    
 
@@ -97,8 +97,10 @@ private static void RunBoomoney(string args)
     Console.WriteLine("Starting boomoney...");
     var process = new System.Diagnostics.Process {
         StartInfo = new System.Diagnostics.ProcessStartInfo {
-            FileName = @"python",
-            Arguments = @"D:\Dropbox\Projets\boomoney\scripts\boomoney-script.py " + args,
+            FileName = @"D:\Dropbox\Projets\boomoney\scripts\bin\woob.exe",
+            Arguments = @"money " + args,
+            // FileName = @"python",
+            // Arguments = @"D:\Dropbox\Projets\boomoney\scripts\boomoney-script.py " + args,
 //            FileName = @"D:\Dropbox\Projets\boomoney\scripts\boomoney",
 //            Arguments = args,
            //Arguments = "--help",
